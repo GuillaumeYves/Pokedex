@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="container">
+    <div class="container" id="pokédexContainer">
       <div class="row" id="pokemonGrid"></div>
     </div>
 
@@ -31,7 +31,7 @@
         <div class="modal-content">
           <div class="card-body">
             <div class="card-header">
-              <h5 class="card-title text-left" id="modalPokemonName"></h5>
+              <h4 class="card-title text-left" id="modalPokemonName"></h4>
             </div>
             <p class="card-text text-left" id="modalPokemonNumber"></p>
           </div>
@@ -41,8 +41,16 @@
                 <div class="col-md-4">
                   <img src="" id="modalPokemonImage" class="img-fluid" alt="" />
                   <div
-                    class="row justify-content-center"
+                    class="row justify-content-center mt-5"
                     id="modalPokemonTypes"></div>
+                  <div class="row justify-content-center mt-3">
+                    <div class="text-center" id="modalPokemonHeight"></div>
+                    <div class="text-center" id="modalPokemonWeight"></div>
+                  </div>
+                  <div
+                    class="row mt-5"
+                    style="margin-left: 5px; margin-right: 5px"
+                    id="modalPokemonDescription"></div>
                 </div>
                 <div class="col-md-8">
                   <div class="card">
@@ -55,12 +63,22 @@
                   </div>
                   <div class="card mt-3">
                     <div class="card-header">
-                      <h5 class="card-title">MOVES</h5>
+                      <h5 class="card-title">MOVE(S)</h5>
                     </div>
                     <div class="card-body" id="modalPokemonAbilities"></div>
                   </div>
+                  <div class="card mt-3">
+                    <div class="card-header">
+                      <h5 class="card-title">LOCATION(S)</h5>
+                    </div>
+                    <div
+                      class="card-body"
+                      id="modalPokemonLocationAreas"
+                      style="max-height: 200px; overflow-y: auto"></div>
+                  </div>
                 </div>
               </div>
+              <hr class="mt-3" style="width: 80%" />
             </div>
           </div>
         </div>

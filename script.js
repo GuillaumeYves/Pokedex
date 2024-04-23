@@ -1,25 +1,49 @@
 $(document).ready(function () {
-  // API URL
+  // API URLs
   const apiUrl = "https://pokeapi.co/api/v2/pokemon/";
+  const locationUrl = "https://pokeapi.co/api/v2/pokemon/";
 
   // Function to fetch Pokémon data
-  function fetchPokemon() {
-    for (let i = 1; i <= 200; i++) {
-      $.getJSON(apiUrl + i, function (data) {
-        // Capitalize the first letter of Pokémon name
-        data.name = capitalizeFirstLetter(data.name);
-        displayPokemon(data);
-      });
-    }
+  function fetchPokemon(pokemonId) {
+    $.getJSON(apiUrl + pokemonId, function (data) {
+      // Capitalize the first letter of Pokémon name
+      data.name = capitalizeFirstLetter(data.name);
+      displayPokemon(data);
+
+      // Fetch next Pokémon
+      const nextPokemonId = pokemonId + 1;
+      fetchPokemon(nextPokemonId);
+    }).fail(function (jqXHR, textStatus, errorThrown) {
+      console.error(
+        `Failed to fetch Pokémon with ID ${pokemonId}: ${textStatus}, ${errorThrown}`
+      );
+
+      // If fetching fails, try fetching the next Pokémon
+      const nextPokemonId = pokemonId + 1;
+      fetchPokemon(nextPokemonId);
+    });
+  }
+
+  // Function to fetch Pokémon location areas
+  function fetchPokemonLocations(pokemonId) {
+    const url = `${locationUrl}${pokemonId}/encounters`;
+
+    $.getJSON(url, function (data) {
+      displayPokemonLocations(data);
+    }).fail(function (jqXHR, textStatus, errorThrown) {
+      console.error(
+        `Failed to fetch Pokémon locations with ID ${pokemonId}: ${textStatus}, ${errorThrown}`
+      );
+    });
   }
 
   // Function to display Pokémon
   function displayPokemon(pokemon) {
     const pokemonCard = `
       <div class="col-md-3 mb-4">
-        <div class="card" onclick="showPokemonModal(${pokemon.id})"> <!-- Add onclick event -->
-          <img src="${pokemon.sprites.other["official-artwork"].front_default}" class="card-img-top" alt="${pokemon.name}">
-          <div class="card-body">
+        <div class="card" onclick="showPokemonModal(${pokemon.id})">
+          <img src="${pokemon.sprites.other["official-artwork"].front_default}" class="card-img-top" alt="${pokemon.name}" style="width: 50%; height: auto; display: block; margin: 0 auto;">
+          <div class="card-body" id="pokemonCard">
             <h5 class="card-header text-center">${pokemon.name}</h5>
             <p class="card-text text-left">#${pokemon.id}</p>
           </div>
@@ -64,7 +88,7 @@ $(document).ready(function () {
           case "special-defense":
             return "SP.DEF";
           default:
-            return statName.toUpperCase(); // Default to uppercase if not matched
+            return statName.toUpperCase();
         }
       }
 
@@ -77,76 +101,146 @@ $(document).ready(function () {
           }%" aria-valuenow="${
           stat.base_stat
         }" aria-valuemin="0" aria-valuemax="100">
-            ${getStatAbbreviation(stat.stat.name)}: ${
-          stat.base_stat
-        } <!-- Display abbreviated stat name and value -->
+            ${getStatAbbreviation(stat.stat.name)}: ${stat.base_stat}
           </div>
         </div>
       `;
         $("#modalPokemonStats").append(statBar);
       });
 
+      // Clear existing moves
+      $("#modalPokemonAbilities").empty();
+
+      // Display moves learned at level 1
+      const moveNames = data.moves.reduce((acc, move) => {
+        // Check if move is a base move (learned through level-up) and learned at level 1
+        const isAtLevel1 = move.version_group_details.some(
+          (detail) =>
+            detail.move_learn_method.name === "level-up" &&
+            detail.level_learned_at === 1
+        );
+
+        if (isAtLevel1) {
+          const moveName = capitalizeFirstLetter(move.move.name);
+          acc.push(moveName);
+        }
+
+        return acc;
+      }, []);
+
+      const movesLine = moveNames.join(", ");
+      $("#modalPokemonAbilities").append(`<p>${movesLine}</p>`);
+
       // Clear existing types
       $("#modalPokemonTypes").empty();
 
-      // Display types with their logos
-      data.types.forEach((type) => {
-        const typeName = capitalizeFirstLetter(type.type.name);
-        const typeLogo = `https://pokeapi.co/api/v2/type/${type.type.name}/`;
+      // Types images
+      const typeImages = {
+        normal: { image: "images/types/normal.png", name: "Normal" },
+        fire: { image: "images/types/fire.png", name: "Fire" },
+        water: { image: "images/types/water.png", name: "Water" },
+        electric: { image: "images/types/electric.png", name: "Electric" },
+        grass: { image: "images/types/grass.png", name: "Grass" },
+        ice: { image: "images/types/ice.png", name: "Ice" },
+        fighting: { image: "images/types/fighting.png", name: "Fighting" },
+        poison: { image: "images/types/poison.png", name: "Poison" },
+        ground: { image: "images/types/ground.png", name: "Ground" },
+        flying: { image: "images/types/flying.png", name: "Flying" },
+        psychic: { image: "images/types/psychic.png", name: "Psychic" },
+        bug: { image: "images/types/bug.png", name: "Bug" },
+        rock: { image: "images/types/rock.png", name: "Rock" },
+        ghost: { image: "images/types/ghost.png", name: "Ghost" },
+        dragon: { image: "images/types/dragon.png", name: "Dragon" },
+        dark: { image: "images/types/dark.png", name: "Dark" },
+        steel: { image: "images/types/steel.png", name: "Steel" },
+        fairy: { image: "images/types/fairy.png", name: "Fairy" },
+      };
 
-        // Create type badge with logo
-        const typeBadge = `
-        <div class="col-md-3">
-          <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/types/${type.type.name}.png" alt="${typeName}" class="img-fluid">
-          <p class="text-center">${typeName}</p>
+      // Display Pokémon types
+      data.types.forEach((type) => {
+        const typeName = type.type.name;
+        const typeData = typeImages[typeName];
+        if (typeData) {
+          const typeContainer = `
+          <div class="col-6 text-center">
+            <img src="${typeData.image}" alt="${typeName}" class="img-fluid mx-auto type-icon" />
+            <p class="mb-0">${typeData.name}</p>
+          </div>
+        `;
+          $("#modalPokemonTypes").append(typeContainer);
+        } else {
+          console.error(`Type data not found for type: ${typeName}`);
+        }
+      });
+
+      // Display height and weight
+      const heightMeters = (data.height / 10).toFixed(1); // Convert height to meters
+      const weightKg = (data.weight / 10).toFixed(1); // Convert weight to kilograms
+
+      const heightWeightContainer = `
+      <div class="row">
+        <div class="col border-right d-flex justify-content-center align-items-center">
+          <p class="mb-0">${heightMeters}m</p>
+        </div>
+        <div class="col d-flex justify-content-center align-items-center">
+          <p class="mb-0">${weightKg}kg</p>
+        </div>
+      </div>
+    `;
+      $("#modalPokemonHeight").html(heightWeightContainer);
+
+      // Display Pokémon description
+      const speciesUrl = data.species.url;
+      $.getJSON(speciesUrl, function (speciesData) {
+        console.log("Species data:", speciesData);
+        const descriptionEntry = speciesData.flavor_text_entries.find(
+          (entry) => entry.language.name === "en"
+        );
+        console.log("Description entry:", descriptionEntry);
+        let description = descriptionEntry
+          ? descriptionEntry.flavor_text
+          : "No description available";
+        console.log("Description:", description);
+
+        // Sanitize description
+        description = description.replace(/[\n\f\v\r\t]/g, " "); // Remove newline and tab characters
+        description = description.replace(/\s+/g, " "); // Remove multiple consecutive spaces
+        description = description.replace(/POKéMON/g, "Pokémon"); // Correct Pokémon spelling
+
+        const descriptionContainer = `
+        <div class="col-12 text-center">
+          <p><em>${description}</em></p>
         </div>
       `;
-        $("#modalPokemonTypes").append(typeBadge);
+        $("#modalPokemonDescription").html(descriptionContainer);
+      }).fail(function (jqXHR, textStatus, errorThrown) {
+        console.error(
+          `Failed to fetch species details: ${textStatus}, ${errorThrown}`
+        );
       });
 
-      // Clear existing abilities
-      $("#modalPokemonAbilities").empty();
-
-      // Display abilities with their flavor text
-      data.moves.forEach((move) => {
-        const moveName = capitalizeFirstLetter(move.move.name);
-
-        // Fetch move details from the API
-        console.log(`Fetching details for move: ${moveName}`);
-        $.getJSON(move.move.url, function (moveData) {
-          console.log(`Move data for ${moveName}:`, moveData); // Log move data for inspection
-
-          // Check if moveData is defined
-          if (moveData) {
-            const flavorTextEntries = moveData.flavor_text_entries;
-            // Find the first English flavor text
-            const flavorTextEntry = flavorTextEntries.find(
-              (entry) => entry.language.name === "en"
-            );
-            const flavorText = flavorTextEntry
-              ? flavorTextEntry.flavor_text
-              : "No flavor text available";
-
-            // Display move with flavor text
-            const moveItem = `<p>${moveName}: ${flavorText}</p>`;
-            $("#modalPokemonAbilities").append(moveItem);
-          } else {
-            console.error(
-              `Failed to fetch move details for ${moveName}: Move data is undefined.`
-            );
-          }
-        }).fail(function (jqXHR, textStatus, errorThrown) {
-          console.error(
-            `Failed to fetch move details for ${moveName}: ${textStatus}, ${errorThrown}`
-          );
-        });
-      });
+      // Fetch and display Pokémon location areas
+      fetchPokemonLocations(pokemonId);
 
       // Show modal
       $("#pokemonModal").modal("show");
     });
   };
 
+  // Function to display Pokémon location areas
+  function displayPokemonLocations(locations) {
+    const locationList = locations.map(
+      (location) => location.location_area.name
+    );
+    const locationHtml =
+      locationList.length > 0
+        ? `<ul>${locationList
+            .map((location) => `<li>${location}</li>`)
+            .join("")}</ul>`
+        : "<p>No location data available</p>";
+    $("#modalPokemonLocationAreas").html(locationHtml);
+  }
+
   // Initial fetch
-  fetchPokemon();
+  fetchPokemon(1);
 });
