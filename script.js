@@ -5,23 +5,36 @@ $(document).ready(function () {
 
   // Function to fetch Pokémon data
   function fetchPokemon(pokemonId) {
-    $.getJSON(apiUrl + pokemonId, function (data) {
-      // Capitalize the first letter of Pokémon name
-      data.name = capitalizeFirstLetter(data.name);
-      displayPokemon(data);
+    const maxPokemonId = 1025; // Set the maximum Pokémon ID to fetch (adjust as needed)
 
-      // Fetch next Pokémon
-      const nextPokemonId = pokemonId + 1;
-      fetchPokemon(nextPokemonId);
-    }).fail(function (jqXHR, textStatus, errorThrown) {
-      console.error(
-        `Failed to fetch Pokémon with ID ${pokemonId}: ${textStatus}, ${errorThrown}`
-      );
+    // Recursive function to fetch Pokémon data
+    function fetchNextPokemon(pokemonId) {
+      if (pokemonId > maxPokemonId) {
+        console.log("Reached the maximum Pokémon ID:", maxPokemonId);
+        return; // Stop fetching when we reach the maximum ID
+      }
 
-      // If fetching fails, try fetching the next Pokémon
-      const nextPokemonId = pokemonId + 1;
-      fetchPokemon(nextPokemonId);
-    });
+      $.getJSON(apiUrl + pokemonId, function (data) {
+        // Capitalize the first letter of Pokémon name
+        data.name = capitalizeFirstLetter(data.name);
+        displayPokemon(data);
+
+        // Fetch next Pokémon
+        const nextPokemonId = pokemonId + 1;
+        fetchNextPokemon(nextPokemonId);
+      }).fail(function (jqXHR, textStatus, errorThrown) {
+        console.error(
+          `Failed to fetch Pokémon with ID ${pokemonId}: ${textStatus}, ${errorThrown}`
+        );
+
+        // If fetching fails, try fetching the next Pokémon
+        const nextPokemonId = pokemonId + 1;
+        fetchNextPokemon(nextPokemonId);
+      });
+    }
+
+    // Start fetching Pokémon from the specified ID
+    fetchNextPokemon(pokemonId);
   }
 
   // Function to fetch Pokémon location areas
@@ -40,16 +53,16 @@ $(document).ready(function () {
   // Function to display Pokémon
   function displayPokemon(pokemon) {
     const pokemonCard = `
-      <div class="col-md-3 mb-4">
-        <div class="card" onclick="showPokemonModal(${pokemon.id})">
-          <img src="${pokemon.sprites.other["official-artwork"].front_default}" class="card-img-top" alt="${pokemon.name}" style="width: 50%; height: auto; display: block; margin: 0 auto;">
-          <div class="card-body" id="pokemonCard">
-            <h5 class="card-header text-center">${pokemon.name}</h5>
-            <p class="card-text text-left">#${pokemon.id}</p>
-          </div>
-        </div>
-      </div>
-    `;
+            <div class="col-md-3 mb-4">
+                <div class="card" onclick="showPokemonModal(${pokemon.id})">
+                    <img src="${pokemon.sprites.other["official-artwork"].front_default}" class="card-img-top" alt="${pokemon.name}" style="width: 50%; height: auto; display: block; margin: 0 auto;">
+                    <div class="card-body" id="pokemonCard">
+                        <h5 class="card-header text-center">${pokemon.name}</h5>
+                        <p class="card-text text-left">#${pokemon.id}</p>
+                    </div>
+                </div>
+            </div>
+        `;
     $("#pokemonGrid").append(pokemonCard);
   }
 
@@ -95,16 +108,18 @@ $(document).ready(function () {
       // Display stats as progression bars
       data.stats.forEach((stat) => {
         const statBar = `
-        <div class="progress mb-3">
-          <div class="progress-bar" role="progressbar" style="width: ${
-            stat.base_stat
-          }%" aria-valuenow="${
+                    <div class="progress mb-3">
+                        <div class="progress-bar" role="progressbar" style="width: ${
+                          stat.base_stat
+                        }%" aria-valuenow="${
           stat.base_stat
         }" aria-valuemin="0" aria-valuemax="100">
-            ${getStatAbbreviation(stat.stat.name)}: ${stat.base_stat}
-          </div>
-        </div>
-      `;
+                            ${getStatAbbreviation(stat.stat.name)}: ${
+          stat.base_stat
+        }
+                        </div>
+                    </div>
+                `;
         $("#modalPokemonStats").append(statBar);
       });
 
@@ -162,11 +177,11 @@ $(document).ready(function () {
         const typeData = typeImages[typeName];
         if (typeData) {
           const typeContainer = `
-          <div class="col-6 text-center">
-            <img src="${typeData.image}" alt="${typeName}" class="img-fluid mx-auto type-icon" />
-            <p class="mb-0">${typeData.name}</p>
-          </div>
-        `;
+                        <div class="col-6 text-center">
+                            <img src="${typeData.image}" alt="${typeName}" class="img-fluid mx-auto type-icon" />
+                            <p class="mb-0">${typeData.name}</p>
+                        </div>
+                    `;
           $("#modalPokemonTypes").append(typeContainer);
         } else {
           console.error(`Type data not found for type: ${typeName}`);
@@ -178,15 +193,15 @@ $(document).ready(function () {
       const weightKg = (data.weight / 10).toFixed(1); // Convert weight to kilograms
 
       const heightWeightContainer = `
-      <div class="row">
-        <div class="col border-right d-flex justify-content-center align-items-center">
-          <p class="mb-0">${heightMeters}m</p>
-        </div>
-        <div class="col d-flex justify-content-center align-items-center">
-          <p class="mb-0">${weightKg}kg</p>
-        </div>
-      </div>
-    `;
+                <div class="row">
+                    <div class="col border-right d-flex justify-content-center align-items-center">
+                        <p class="mb-0">${heightMeters}m</p>
+                    </div>
+                    <div class="col d-flex justify-content-center align-items-center">
+                        <p class="mb-0">${weightKg}kg</p>
+                    </div>
+                </div>
+            `;
       $("#modalPokemonHeight").html(heightWeightContainer);
 
       // Display Pokémon description
@@ -208,10 +223,10 @@ $(document).ready(function () {
         description = description.replace(/POKéMON/g, "Pokémon"); // Correct Pokémon spelling
 
         const descriptionContainer = `
-        <div class="col-12 text-center">
-          <p><em>${description}</em></p>
-        </div>
-      `;
+                    <div class="col-12 text-center">
+                        <p><em>${description}</em></p>
+                    </div>
+                `;
         $("#modalPokemonDescription").html(descriptionContainer);
       }).fail(function (jqXHR, textStatus, errorThrown) {
         console.error(
@@ -221,6 +236,9 @@ $(document).ready(function () {
 
       // Fetch and display Pokémon location areas
       fetchPokemonLocations(pokemonId);
+
+      // Fetch and display evolution chain
+      fetchEvolutionChain(pokemonId);
 
       // Show modal
       $("#pokemonModal").modal("show");
@@ -239,6 +257,96 @@ $(document).ready(function () {
             .join("")}</ul>`
         : "<p>No location data available</p>";
     $("#modalPokemonLocationAreas").html(locationHtml);
+  }
+
+  // Function to fetch and display evolution chain
+  function fetchEvolutionChain(pokemonId) {
+    const speciesUrl = `https://pokeapi.co/api/v2/pokemon-species/${pokemonId}/`;
+
+    console.log("Fetching Pokémon species data for ID:", pokemonId);
+
+    $.getJSON(speciesUrl, function (speciesData) {
+      console.log("Species Data:", speciesData);
+
+      const evolutionChainUrl = speciesData.evolution_chain.url;
+      console.log("Evolution Chain URL:", evolutionChainUrl);
+
+      $.getJSON(evolutionChainUrl, function (chainData) {
+        console.log("Evolution Chain Data:", chainData);
+        displayEvolutionChain(chainData.chain);
+      }).fail(function (jqXHR, textStatus, errorThrown) {
+        console.error(
+          `Failed to fetch evolution chain for Pokémon with ID ${pokemonId}: ${textStatus}, ${errorThrown}`
+        );
+      });
+    }).fail(function (jqXHR, textStatus, errorThrown) {
+      console.error(
+        `Failed to fetch Pokémon species data for ID ${pokemonId}: ${textStatus}, ${errorThrown}`
+      );
+    });
+  }
+
+  // Function to display the evolution chain
+  function displayEvolutionChain(chainData) {
+    // Clear existing evolution chain
+    $("#evolutionChainCardBody").empty();
+
+    // Display each stage of the evolution chain
+    displayEvolutionStage(chainData);
+  }
+
+  // Function to recursively display each stage of the evolution chain
+  function displayEvolutionStage(stage) {
+    const pokemon = stage.species;
+    const pokemonUrlParts = pokemon.url.split("/");
+    const pokemonId = pokemonUrlParts[pokemonUrlParts.length - 2];
+    const pokemonName = capitalizeFirstLetter(pokemon.name);
+
+    // Create HTML for the evolution stage
+    const stageHtml = `
+      <div class="col-md-3 mb-4">
+        <div class="card" style="max-width: 250px;">
+          <img src="${getOfficialArtworkUrl(
+            pokemonId
+          )}" class="card-img-top" alt="${
+      pokemon.name
+    }" style="width: 50%; height: auto; display: block; margin: 0 auto;">
+          <div class="card-body">
+            <h5 class="card-header text-center">${pokemonName}</h5>
+            <p class="card-text text-left">#${pokemonId}</p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Append the stage HTML to the evolution chain card body
+    $("#evolutionChainCardBody").append(stageHtml);
+
+    // Check if there's a next evolution stage
+    if (stage.evolves_to && stage.evolves_to.length > 0) {
+      // Create a container to hold the next evolution stages and arrows in a single row
+      const nextStagesContainer = $(
+        '<div class="row justify-content-center align-items-center"></div>'
+      );
+
+      // Recursively display each evolution stage in the array
+      stage.evolves_to.forEach((nextStage) => {
+        // Add arrow icon between stages
+        nextStagesContainer.append(
+          '<div class="col-md-1 text-center align-self-center"><i class="fas fa-long-arrow-alt-right" style="font-size: 2em;"></i></div>'
+        );
+
+        displayEvolutionStage(nextStage); // Recursively display the next evolution stage
+      });
+
+      // Append the container for next evolution stages and arrows
+      $("#evolutionChainCardBody").append(nextStagesContainer);
+    }
+  }
+
+  // Function to get the official artwork URL from the species data
+  function getOfficialArtworkUrl(pokemonId) {
+    return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemonId}.png`;
   }
 
   // Initial fetch
