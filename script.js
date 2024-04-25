@@ -38,6 +38,12 @@ $(document).ready(function () {
     fetchNextPokemon(pokemonId);
   }
 
+  // Function to extract Pokémon ID from API URL
+  function getPokemonIdFromUrl(url) {
+    const parts = url.split("/");
+    return parseInt(parts[parts.length - 2]);
+  }
+
   // Function to fetch more Pokémon when the button is clicked
   $("#loadMoreBtn").on("click", function () {
     // Increment the maximum Pokémon ID to fetch the next set
@@ -47,6 +53,54 @@ $(document).ready(function () {
 
   // Initial fetch
   fetchPokemon(1);
+
+  // Debounce function
+  function debounce(func, delay) {
+    let timeoutId;
+    return function () {
+      const context = this;
+      const args = arguments;
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        func.apply(context, args);
+      }, delay);
+    };
+  }
+
+  // Event listener for debounced search input
+  $("#searchInput").on(
+    "input",
+    debounce(function () {
+      const searchTerm = $(this).val().trim().toLowerCase();
+      searchPokemon(searchTerm);
+    }, 1000)
+  ); // Adjust the delay (in milliseconds) as needed
+
+  // Function to search and display Pokémon based on search term
+  function searchPokemon(searchTerm) {
+    // Clear existing Pokémon grid
+    $("#pokemonGrid").empty();
+
+    // Fetch Pokémon data based on search term
+    $.getJSON(apiUrl + "?limit=1200", function (data) {
+      // Set the limit to the total number of Pokémon available in the PokéAPI (as of now)
+      const pokemonList = data.results;
+      pokemonList.forEach(function (pokemon) {
+        const pokemonId = getPokemonIdFromUrl(pokemon.url);
+        // Fetch individual Pokémon data
+        $.getJSON(apiUrl + pokemonId, function (pokemonData) {
+          const pokemonName = pokemonData.name.toLowerCase();
+          // Check if Pokémon name or ID matches the search term
+          if (
+            pokemonName.startsWith(searchTerm) ||
+            pokemonId.toString().startsWith(searchTerm)
+          ) {
+            displayPokemon(pokemonData);
+          }
+        });
+      });
+    });
+  }
 
   // Function to fetch Pokémon location areas
   function fetchPokemonLocations(pokemonId) {
@@ -63,8 +117,13 @@ $(document).ready(function () {
 
   // Function to display Pokémon
   function displayPokemon(pokemon) {
-    const pokemonCard = `
-            <div class="col-md-3 mb-4">
+    // Create a new image element
+    const img = new Image();
+
+    // Add an event listener for the 'load' event
+    img.onload = function () {
+      const pokemonCard = `
+            <div class="col-md-3 mb-4" style="display: none;">
                 <div class="card" onclick="showPokemonModal(${pokemon.id})">
                     <img src="${pokemon.sprites.other["official-artwork"].front_default}" class="card-img-top" alt="${pokemon.name}" style="width: 50%; height: auto; display: block; margin: 0 auto;">
                     <div class="card-body" id="pokemonCard">
@@ -74,7 +133,12 @@ $(document).ready(function () {
                 </div>
             </div>
         `;
-    $("#pokemonGrid").append(pokemonCard);
+      // Append the card HTML to the grid, then fade it in
+      $("#pokemonGrid").append(pokemonCard).children(":last").fadeIn();
+    };
+
+    // Set the src attribute of the image (this will trigger the 'load' event)
+    img.src = pokemon.sprites.other["official-artwork"].front_default;
   }
 
   // Function to capitalize the first letter of a string
@@ -315,8 +379,8 @@ $(document).ready(function () {
 
     // Create HTML for the evolution stage with a unique identifier
     const stageHtml = `
-        <div class="col mb-4 mt-4">
-            <div class="card" id="pokemonCard_${pokemonId}" style="max-width: 250px;" onclick="showPokemonModal(${pokemonId})">
+        <div class="col mt-3 mb-3">
+            <div class="card" id="pokemonCard_${pokemonId}" onclick="showPokemonModal(${pokemonId})">
                 <img src="${getOfficialArtworkUrl(
                   pokemonId
                 )}" class="card-img-top" alt="${
