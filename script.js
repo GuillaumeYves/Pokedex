@@ -3,10 +3,11 @@ $(document).ready(function () {
   const apiUrl = "https://pokeapi.co/api/v2/pokemon/";
   const locationUrl = "https://pokeapi.co/api/v2/pokemon/";
 
+  // Variable to keep track of the maximum Pokémon ID fetched so far
+  let maxPokemonId = 20;
+
   // Function to fetch Pokémon data
   function fetchPokemon(pokemonId) {
-    const maxPokemonId = 1025; // Set the maximum Pokémon ID to fetch (adjust as needed)
-
     // Recursive function to fetch Pokémon data
     function fetchNextPokemon(pokemonId) {
       if (pokemonId > maxPokemonId) {
@@ -36,6 +37,16 @@ $(document).ready(function () {
     // Start fetching Pokémon from the specified ID
     fetchNextPokemon(pokemonId);
   }
+
+  // Function to fetch more Pokémon when the button is clicked
+  $("#loadMoreBtn").on("click", function () {
+    // Increment the maximum Pokémon ID to fetch the next set
+    maxPokemonId += 20;
+    fetchPokemon(maxPokemonId - 19); // Start fetching from the next Pokémon ID
+  });
+
+  // Initial fetch
+  fetchPokemon(1);
 
   // Function to fetch Pokémon location areas
   function fetchPokemonLocations(pokemonId) {
@@ -295,28 +306,28 @@ $(document).ready(function () {
     displayEvolutionStage(chainData);
   }
 
-  // Function to recursively display each stage of the evolution chain
+  // Function to display each stage of the evolution chain
   function displayEvolutionStage(stage) {
     const pokemon = stage.species;
     const pokemonUrlParts = pokemon.url.split("/");
     const pokemonId = pokemonUrlParts[pokemonUrlParts.length - 2];
     const pokemonName = capitalizeFirstLetter(pokemon.name);
 
-    // Create HTML for the evolution stage
+    // Create HTML for the evolution stage with a unique identifier
     const stageHtml = `
-      <div class="col-md-3 mb-4">
-        <div class="card" style="max-width: 250px;">
-          <img src="${getOfficialArtworkUrl(
-            pokemonId
-          )}" class="card-img-top" alt="${
+        <div class="col mb-4 mt-4">
+            <div class="card" id="pokemonCard_${pokemonId}" style="max-width: 250px;" onclick="showPokemonModal(${pokemonId})">
+                <img src="${getOfficialArtworkUrl(
+                  pokemonId
+                )}" class="card-img-top" alt="${
       pokemon.name
     }" style="width: 50%; height: auto; display: block; margin: 0 auto;">
-          <div class="card-body">
-            <h5 class="card-header text-center">${pokemonName}</h5>
-            <p class="card-text text-left">#${pokemonId}</p>
-          </div>
+                <div class="card-body">
+                    <h5 class="card-header text-center">${pokemonName}</h5>
+                    <p class="card-text text-left">#${pokemonId}</p>
+                </div>
+            </div>
         </div>
-      </div>
     `;
 
     // Append the stage HTML to the evolution chain card body
@@ -324,23 +335,16 @@ $(document).ready(function () {
 
     // Check if there's a next evolution stage
     if (stage.evolves_to && stage.evolves_to.length > 0) {
-      // Create a container to hold the next evolution stages and arrows in a single row
-      const nextStagesContainer = $(
-        '<div class="row justify-content-center align-items-center"></div>'
+      // Get the first evolution stage
+      const nextStage = stage.evolves_to[0];
+
+      // Add arrow icon between stages
+      $("#evolutionChainCardBody").append(
+        '<div class="col-md-1 text-center align-self-center"><i class="fas fa-long-arrow-alt-right" style="font-size: 2em;"></i></div>'
       );
 
-      // Recursively display each evolution stage in the array
-      stage.evolves_to.forEach((nextStage) => {
-        // Add arrow icon between stages
-        nextStagesContainer.append(
-          '<div class="col-md-1 text-center align-self-center"><i class="fas fa-long-arrow-alt-right" style="font-size: 2em;"></i></div>'
-        );
-
-        displayEvolutionStage(nextStage); // Recursively display the next evolution stage
-      });
-
-      // Append the container for next evolution stages and arrows
-      $("#evolutionChainCardBody").append(nextStagesContainer);
+      // Display the next evolution stage
+      displayEvolutionStage(nextStage);
     }
   }
 
@@ -348,7 +352,4 @@ $(document).ready(function () {
   function getOfficialArtworkUrl(pokemonId) {
     return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemonId}.png`;
   }
-
-  // Initial fetch
-  fetchPokemon(1);
 });

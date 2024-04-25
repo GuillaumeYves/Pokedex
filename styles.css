@@ -1,8 +1,51 @@
+#pokemonGrid::-webkit-scrollbar {
+  right: 0;
+  top: 45px;
+  width: 10px;
+}
+
+#pokemonGrid::-webkit-scrollbar-track-piece:vertical:start {
+  margin-top: 25px;
+}
+
+#pokemonGrid::-webkit-scrollbar-thumb {
+  background: #757575;
+}
+
+#pokemonGrid::-webkit-scrollbar-thumb:hover {
+  background: #000000;
+}
+
+header {
+  padding-top: 10px;
+  text-align: center;
+}
+
+.logo img {
+  width: 50px;
+  height: auto;
+  transition: transform 0.5s;
+  transform-origin: center;
+}
+
+.logo img.rotate {
+  animation: spin 3s cubic-bezier(0.075, 0.82, 0.165, 1) forwards;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(1080deg);
+  }
+}
+
 .card-img-top {
   transition: transform 0.3s ease, filter 0.3s ease;
 }
 
-.card:hover .card-img-top {
+.card:hover > .card-img-top {
   transform: scale(1.2);
   filter: drop-shadow(0px 0px 10px rgba(0, 0, 0, 0.5));
 }
