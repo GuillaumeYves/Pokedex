@@ -5,6 +5,7 @@ $(document).ready(function () {
 
   // Variable to keep track of the maximum Pokémon ID fetched so far
   let maxPokemonId = 20;
+  let lastRequestedMaxPokemonId = maxPokemonId;
 
   // Function to fetch Pokémon data
   function fetchPokemon(pokemonId) {
@@ -48,6 +49,7 @@ $(document).ready(function () {
   $("#loadMoreBtn").on("click", function () {
     // Increment the maximum Pokémon ID to fetch the next set
     maxPokemonId += 20;
+    lastRequestedMaxPokemonId = maxPokemonId;
     fetchPokemon(maxPokemonId - 19); // Start fetching from the next Pokémon ID
   });
 
@@ -72,9 +74,20 @@ $(document).ready(function () {
     "input",
     debounce(function () {
       const searchTerm = $(this).val().trim().toLowerCase();
-      searchPokemon(searchTerm);
+      if (searchTerm === "") {
+        // If the search input is empty, reset the grid to default fetch (1 to 20)
+        resetPokemonGrid();
+      } else {
+        searchPokemon(searchTerm);
+      }
     }, 1000)
-  ); // Adjust the delay (in milliseconds) as needed
+  );
+
+  // Function to reset the Pokémon grid based on the last requested maximum Pokémon ID
+  function resetPokemonGrid() {
+    $("#pokemonGrid").empty(); // Clear existing Pokémon grid
+    fetchPokemon(lastRequestedMaxPokemonId - 39); // Fetch Pokémon from the last requested set
+  }
 
   // Function to search and display Pokémon based on search term
   function searchPokemon(searchTerm) {
@@ -85,20 +98,28 @@ $(document).ready(function () {
     $.getJSON(apiUrl + "?limit=1200", function (data) {
       // Set the limit to the total number of Pokémon available in the PokéAPI (as of now)
       const pokemonList = data.results;
-      pokemonList.forEach(function (pokemon) {
+      const matchingPokemon = pokemonList.filter(function (pokemon) {
         const pokemonId = getPokemonIdFromUrl(pokemon.url);
-        // Fetch individual Pokémon data
-        $.getJSON(apiUrl + pokemonId, function (pokemonData) {
-          const pokemonName = pokemonData.name.toLowerCase();
-          // Check if Pokémon name or ID matches the search term
-          if (
-            pokemonName.startsWith(searchTerm) ||
-            pokemonId.toString().startsWith(searchTerm)
-          ) {
-            displayPokemon(pokemonData);
-          }
-        });
+        const pokemonName = pokemon.name.toLowerCase();
+        // Check if Pokémon name or ID matches the search term
+        return (
+          pokemonName.startsWith(searchTerm) ||
+          pokemonId.toString().startsWith(searchTerm)
+        );
       });
+      if (matchingPokemon.length === 0) {
+        $("#pokemonGrid").html(
+          '<div class="col-12 text-center">No results found</div>'
+        );
+      } else {
+        matchingPokemon.forEach(function (pokemon) {
+          const pokemonId = getPokemonIdFromUrl(pokemon.url);
+          // Fetch individual Pokémon data
+          $.getJSON(apiUrl + pokemonId, function (pokemonData) {
+            displayPokemon(pokemonData);
+          });
+        });
+      }
     });
   }
 
@@ -123,16 +144,16 @@ $(document).ready(function () {
     // Add an event listener for the 'load' event
     img.onload = function () {
       const pokemonCard = `
-            <div class="col-md-3 mb-4" style="display: none;">
-                <div class="card" onclick="showPokemonModal(${pokemon.id})">
-                    <img src="${pokemon.sprites.other["official-artwork"].front_default}" class="card-img-top" alt="${pokemon.name}" style="width: 50%; height: auto; display: block; margin: 0 auto;">
-                    <div class="card-body" id="pokemonCard">
-                        <h5 class="card-header text-center">${pokemon.name}</h5>
-                        <p class="card-text text-left">#${pokemon.id}</p>
+                <div class="col-md-3 mb-4" style="display: none;">
+                    <div class="card" onclick="showPokemonModal(${pokemon.id})">
+                        <img src="${pokemon.sprites.other["official-artwork"].front_default}" class="card-img-top" alt="${pokemon.name}" style="width: 50%; height: auto; display: block; margin: 0 auto;">
+                        <div class="card-body" id="pokemonCard">
+                            <h6 class="card-header text-center">${pokemon.name}</h6>
+                            <p class="card-text text-left">#${pokemon.id}</p>
+                        </div>
                     </div>
                 </div>
-            </div>
-        `;
+            `;
       // Append the card HTML to the grid, then fade it in
       $("#pokemonGrid").append(pokemonCard).children(":last").fadeIn();
     };
@@ -379,20 +400,20 @@ $(document).ready(function () {
 
     // Create HTML for the evolution stage with a unique identifier
     const stageHtml = `
-        <div class="col mt-3 mb-3">
-            <div class="card" id="pokemonCard_${pokemonId}" onclick="showPokemonModal(${pokemonId})">
-                <img src="${getOfficialArtworkUrl(
-                  pokemonId
-                )}" class="card-img-top" alt="${
+            <div class="col mt-3 mb-3">
+                <div class="card" style="max-width: 250px;" id="pokemonCard_${pokemonId}" onclick="showPokemonModal(${pokemonId})">
+                    <img src="${getOfficialArtworkUrl(
+                      pokemonId
+                    )}" class="card-img-top" alt="${
       pokemon.name
     }" style="width: 50%; height: auto; display: block; margin: 0 auto;">
-                <div class="card-body">
-                    <h5 class="card-header text-center">${pokemonName}</h5>
-                    <p class="card-text text-left">#${pokemonId}</p>
+                    <div class="card-body">
+                        <h6 class="card-header text-center">${pokemonName}</h6>
+                        <p class="card-text text-left">#${pokemonId}</p>
+                    </div>
                 </div>
             </div>
-        </div>
-    `;
+        `;
 
     // Append the stage HTML to the evolution chain card body
     $("#evolutionChainCardBody").append(stageHtml);

@@ -1,3 +1,34 @@
+/* For smaller PCs */
+@media (max-width: 991px) {
+  #pokemonGrid .col-md-3 {
+    flex: 0 0 33.33%; /* 3 cards per row */
+    max-width: 33.33%;
+  }
+  #pokemonModal .card-body h4 {
+    font-size: 1.25rem; /* Change the font size to ensure proper display */
+  }
+}
+
+/* For tablets */
+@media (max-width: 767px) {
+  #pokemonGrid .col-md-3 {
+    flex: 0 0 50%; /* 2 cards per row */
+    max-width: 50%;
+  }
+}
+
+/* For phones */
+@media (max-width: 575.98px) {
+  #pokemonGrid .col-md-3 {
+    flex: 0 0 100%; /* 1 card per row */
+    max-width: 100%;
+  }
+}
+
+.card-header {
+  text-overflow: ellipsis;
+}
+
 #pokemonGrid::-webkit-scrollbar {
   right: 0;
   top: 45px;
